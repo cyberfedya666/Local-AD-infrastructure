@@ -1,0 +1,11 @@
+﻿=== HR SHARE ===
+
+Finance Team,
+
+VPN credentials for the new accountant:
+    username: o.finance
+    password: Password1
+
+Please change after first login.
+
+-- IT

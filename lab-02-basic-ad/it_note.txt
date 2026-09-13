@@ -1,0 +1,14 @@
+﻿=== FINANCE SHARE ===
+
+IT Team,
+
+SQL migration to DC01.
+
+Service account:
+    username: svc_sql
+    password: Password1
+    SPN: MSSQLSvc/dc01.corp.local:1433
+
+Do not change password until migration is complete.
+
+-- IT
