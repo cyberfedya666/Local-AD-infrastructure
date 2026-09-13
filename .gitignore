@@ -1,0 +1,24 @@
+# VirtualBox
+*.vdi
+*.vbox
+*.vbox-prev
+*.sav
+Logs/
+Snapshots/
+
+# ISO
+*.iso
+
+# Certipy / BloodHound
+*.json
+*.ccache
+*.pfx
+
+# Hashcat / John
+hash.txt
+asrep.txt
+kerb.txt
+
+# System
+lost+found/
+.DS_Store
