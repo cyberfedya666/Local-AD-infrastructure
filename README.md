@@ -21,7 +21,8 @@ Target audience:
 | 01 | [Basic AD + AD CS](lab-01-basic-ad/) | AS-REP + ESC1 | Medium | ✅ |
 | 02 | [Basic AD + RBCD](lab-02-basic-ad/) | AS-REP + RBCD | Medium | ✅ |
 | 03 | [Printer Pass-Back](lab-03-basic-ad/) | Pass-Back + binPath hijack + NTDS | Hard | ✅ |
-| 04 | [Kerberoast + DCSync](lab-04-basic-ad/) | AS-REP + ForceChangePassword + Kerberoast + DCSync | Hard | ✅ |
+| 04 | [Kerberoast + DCSync + Golden Ticket](lab-04-basic-ad/) | AS-REP + ForceChangePassword + Kerberoast + DCSync + Golden Ticket | Hard | ✅ |
+
 ## Environment
 
 Standard lab topology used across all scenarios:
