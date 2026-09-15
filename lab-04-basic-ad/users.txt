@@ -1,0 +1,12 @@
+a.admin
+i.ivanov
+o.finance
+p.cash
+a.hr
+s.sales
+m.sales
+svc_sql
+svc_backup
+hr_admin
+sys_admin
+reader
