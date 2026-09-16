@@ -22,7 +22,7 @@ Target audience:
 | 02 | [Basic AD + RBCD](lab-02-basic-ad/) | AS-REP + RBCD | Medium | ✅ |
 | 03 | [Printer Pass-Back](lab-03-basic-ad/) | Pass-Back + binPath hijack + NTDS | Hard | ✅ |
 | 04 | [Kerberoast + DCSync + Golden Ticket](lab-04-basic-ad/) | AS-REP + ForceChangePassword + Kerberoast + DCSync + Golden Ticket | Hard | ✅ |
-| 05 | [Responder + Kerberoast + DCSync](lab-05-basic-ad/) | LLMNR Poisoning + Kerberoast + DCSync + Golden Ticket | Medium-hard | ✅ |
+| 05 | [Responder + Reanimate Tombstones + Kerberoast + DCSync](lab-05-basic-ad/) | LLMNR Poisoning + Reanimate Tombstones + Kerberoast + DCSync + Golden Ticket | Medium-hard | ✅ |
 
 ## Environment
 
