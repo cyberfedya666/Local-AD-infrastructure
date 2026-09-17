@@ -45,7 +45,7 @@ VICTIM (i.ivanov) → LLMNR broadcast → Responder → NTLMv2 hash
 |---|---|---|---|
 | Ivan Ivanov | i.ivanov | Password1 | Helpdesk, IT_Support, VPN_Users, Remote Management Users |
 | Legacy Service | svc_legacy | Barcelona1 | Backup Operators |
-| Administrator | Administrator | Zoloto08 | Domain Admins |
+
 
 ## Shares
 
