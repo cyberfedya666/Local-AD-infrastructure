@@ -29,18 +29,18 @@ Target audience:
 Standard lab topology used across all scenarios:
 
 ```
-┌────────────────┐    ┌────────────────┐    ┌────────────────┐
-│     DC01       │    │     VICTIM     │    │     Parrot     │
-│  Win Server    │────│    Win 10      │────│   Parrot OS    │
-│ 192.168.31.100 │    │ 192.168.31.204 │    │     DHCP       │
-│  DC + AD CS    │    │    Client      │    │   Attacker     │
-└────────────────┘    └────────────────┘    └────────────────┘
+    ┌────────────────┐        ┌────────────────┐        ┌────────────────┐
+    │     DC01       │        │     VICTIM     │        │     Parrot     │
+    │  Win Server    │   ──── │  Win 10/11     | ────   │     Parrot OS  │
+    | 192.168.31.100 │        │ 192.168.31.207 │        │     DHCP       │
+    │  DC + AD CS    │        │    Client      │        │   Attacker     │
+    └────────────────┘        └────────────────┘        └────────────────┘
 ```
 
 | Component | Version |
 |---|---|
 | Domain Controller | Windows Server 2022 |
-| Client | Windows 10 22H2 |
+| Client | Windows 10/11 22H2 |
 | Attacker | Parrot OS |
 | Domain | `corp.local` |
 | Subnet | `192.168.31.0/24` |
