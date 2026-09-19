@@ -1,5 +1,15 @@
 # Lab 06: GPO Abuse → DCSync → Domain Admin
 
+## Lab Notes
+
+This lab uses a single Windows Server 2022 machine (DC01) for both
+the Domain Controller and the target workstation. In a real environment,
+the accountant (afedorov) would sit on a separate workstation (WS01),
+and the GPO would be linked to the IT OU (not Domain Controllers).
+
+This simplification is intentional: the lab focuses on the GPO Abuse
+technique, not on the realism of the environment.
+
 ## Overview
 
 A basic corporate Active Directory environment with intentionally introduced misconfigurations.
@@ -64,8 +74,9 @@ lowuser → SMB Public → note.txt → nbelova:PleaseChangeYourPassword123
 | 2 | ForceChangePassword ACL | `nbelova` → `afedorov` | T1098 |
 | 3 | Weak Password | `lowuser`, `nbelova` | T1110.002 |
 | 4 | GPO Abuse (Immediate Scheduled Task) | `afedorov` → `IT-Workstation-Settings` | T1484.001 |
-| 5 | DCSync rights | `afedorov` (local admin on DC01) | T1003.006 |
-| 6 | Golden Ticket | `krbtgt` | T1558.001 |
+| 5 | GPO linked to Domain Controllers | IT-Workstation-Settings → OU=Domain Controllers | T1484.001 |
+| 6 | DCSync rights | `afedorov` (local admin on DC01) | T1003.006 |
+| 7 | Golden Ticket | `krbtgt` | T1558.001 |
 
 ## Attack Steps
 
