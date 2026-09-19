@@ -30,10 +30,10 @@ Standard lab topology used across all scenarios:
 
 ```
     ┌────────────────┐        ┌────────────────┐        ┌────────────────┐
-    │     DC01       │        │     VICTIM     │        │     Parrot     │
+    │     DC01       │        │     WS01       │        │     Parrot     │
     │  Win Server    │   ──── │  Win 10/11     | ────   │     Parrot OS  │
     | 192.168.31.100 │        │ 192.168.31.207 │        │     DHCP       │
-    │  DC + AD CS    │        │    Client      │        │   Attacker     │
+    │  DC + AD CS    │        │    Client      │        │     Attacker   │
     └────────────────┘        └────────────────┘        └────────────────┘
 ```
 
