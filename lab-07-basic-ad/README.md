@@ -142,7 +142,7 @@ bloodhound-python -d corp.local -u m.orlov -p 'MOrlov_Backup2026!' -ns 192.168.3
 
 Load BloodHound and search for `m.orlov`:
 
-![m.orlov GenericAll on svc_report](orlovGenerivsvc.png)
+![m.orlov GenericAll on svc_report](screenshots/orlovGenerivsvc.png)
 
 **Result:** `m.orlov` has **GenericAll** on `svc_report`. This allows us to reset `svc_report`'s password without knowing the current one.
 
@@ -185,7 +185,7 @@ Output:
 svc_report --[AllowedToDelegate]--> DC01.CORP.LOCAL
 ```
 
-![svc_report AllowedToDelegate to DC01](AllowedToDelegate.png)
+![svc_report AllowedToDelegate to DC01](screenshots/AllowedToDelegate.png)
 
 **Result:** `svc_report` has **Constrained Delegation** to `DC01.CORP.LOCAL` via `msDS-AllowedToDelegateTo`.
 
