@@ -142,16 +142,6 @@ bloodhound-python -d corp.local -u m.orlov -p 'MOrlov_Backup2026!' -ns 192.168.3
 
 Load BloodHound and search for `m.orlov`:
 
-```
-MATCH (n:User {name:"M.ORLOV@CORP.LOCAL"})-[r]->(m) RETURN n,r,m
-```
-
-Output:
-
-```
-m.orlov --[GenericAll]--> svc_report
-```
-
 ![m.orlov GenericAll on svc_report](orlovGenerivsvc.png)
 
 **Result:** `m.orlov` has **GenericAll** on `svc_report`. This allows us to reset `svc_report`'s password without knowing the current one.
