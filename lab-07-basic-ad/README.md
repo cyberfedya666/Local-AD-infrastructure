@@ -175,16 +175,6 @@ SMB  192.168.31.100  445  DC01  [+] corp.local\svc_report:ReportSvc2026New!
 
 Now that we control `svc_report`, we enumerate its rights in BloodHound.
 
-```
-MATCH (n:User {name:"SVC_REPORT@CORP.LOCAL"})-[r]->(m) RETURN n,r,m
-```
-
-Output:
-
-```
-svc_report --[AllowedToDelegate]--> DC01.CORP.LOCAL
-```
-
 ![svc_report AllowedToDelegate to DC01](screenshots/AllowedToDelegate.png)
 
 **Result:** `svc_report` has **Constrained Delegation** to `DC01.CORP.LOCAL` via `msDS-AllowedToDelegateTo`.
