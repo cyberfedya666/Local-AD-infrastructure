@@ -25,6 +25,7 @@ Target audience:
 | 05 | [Responder + Reanimate Tombstones + Kerberoast + DCSync](lab-05-basic-ad/) | LLMNR Poisoning + Reanimate Tombstones + Kerberoast + DCSync + Golden Ticket | Medium-hard | ✅ |
 | 06 | [GPO Abuse + DCSync + Golden Ticket](lab-06-basic-ad/) | ForceChangePassword + GPO Abuse + DCSync + Golden Ticket | Hard | ✅ |
 | 07 | [Constrained Delegation + LDAP + DCSync + Golden Ticket](lab-07-basic-ad/) | GenericAll + Constrained Delegation + SPN Swap + LDAP ACL Modification + DCSync + Golden Ticket | Medium | ✅ |
+| 08 | [ADCS ESC2/ESC3 Abuse](lab-08-basic-ad/README.md) | ESC2 (Any Purpose EKU) + ESC3 (Enrollment Agent EKU) + PKINIT | Medium | ✅ |
 
 ## Environment
 
