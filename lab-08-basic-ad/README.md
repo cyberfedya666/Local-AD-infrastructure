@@ -118,31 +118,23 @@ The template is vulnerable to the ESC2 technique.
 
 The vulnerability in the certificate template is confirmed. The next step is to exploit it using Certipy.
 
-### 3. Request Enrollment Agent Certificate (ikomarova.pfx)
+### 3. Obtain Enrollment Agent Certificate and Request Administrator Certificate
 
-**Goal:** Obtain a certificate on the name of `ikomarova` using the vulnerable `ESC2` template.
+**Goal:** Obtain a certificate on the name of `ikomarova` using the vulnerable `ESC2` template, then use it as an enrollment agent credential to request a certificate on the name of `Administrator`.
 
-![Request certificate for ikomarova](screenshots/ikomarova_cert.png)
+![Request Administrator certificate via -on-behalf-of](screenshots/administrator_cert.png)
 
-We obtained `ikomarova.pfx` — an enrollment agent certificate on the name of `ikomarova`. Since the template is vulnerable to both ESC2 and ESC3, this certificate can now be used as an enrollment agent credential to request certificates on behalf of other users.
+First, a certificate was requested on the name of `ikomarova` using the `ESC2` template (`ikomarova.pfx`). Since the template is vulnerable to both ESC2 and ESC3, this certificate acts as an enrollment agent credential. It was then used to request a certificate on behalf of `Administrator` via the `-on-behalf-of` flag, resulting in `administrator.pfx`.
 
-### 4. Request Administrator Certificate (`-on-behalf-of`)
-
-**Goal:** Use the enrollment agent certificate to request a certificate on the name of `Administrator`.
-
-![Request Administrator certificate](screenshots/administrator_cert.png)
-
-We received `administrator.pfx` — a certificate issued by the CA on the name of `Administrator`.
-
-### 5. Authenticate as Administrator (PKINIT)
+### 4. Authenticate as Administrator (PKINIT)
 
 **Goal:** Authenticate to the domain using the obtained certificate via PKINIT and retrieve the `Administrator` NT hash.
 
-![Authenticate as Administrator via PKINIT](screenshots/pkinit.png)
+![Authenticate as Administrator via PKINIT and retrieve NT hash](screenshots/hashdump.png)
 
 We obtained the `Administrator` NT hash — equivalent to full domain compromise.
 
-### 6. RCE via psexec
+### 5. RCE via psexec
 
 **Goal:** Obtain a `SYSTEM` shell on the domain controller using the obtained NT hash.
 
